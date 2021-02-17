@@ -29,10 +29,6 @@ fish = read_csv(file.path(data_dir, "siscowet.csv"))
 # exploring the data
 print(fish)
 
-nrow(filter(fish, locID == "Blind Sucker")) # 138
-nrow(filter(fish, locID == "Deer Park")) # 397
-nrow(filter(fish, locID == "Grand Marais")) # 152
-nrow(filter(fish, locID == "Little Lake Harbor")) # 93
 
 # histograms
 hist(fish$pnldep)
@@ -113,17 +109,13 @@ fish_sub %>%
 
 
 # cleaning up the final figure
-len_wgt = ggplot(fish_sub, aes(x = len, y = wgt, col = locID)) #+ 
-  #geom_point() +
-  #geom_smooth(method = "lm", se = F)
+len_wgt = ggplot(fish_sub, aes(x = len, y = wgt, col = locID)) 
 
 
-
-len_wgt + geom_jitter(shape = 16, alpha = 0.9, size = 2) +
+len_wgt + geom_jitter(shape = 16, alpha = 0.5, size = 2) +
   #facet_wrap(~locID) +
   theme(
     panel.background = element_blank(),
-    #axis.line = element_line(color = "gray50"),
     panel.border = element_rect(colour = "gray80", fill = NA),
     legend.position = "none"
   ) +
@@ -140,11 +132,87 @@ len_wgt + geom_jitter(shape = 16, alpha = 0.9, size = 2) +
   #scale_color_brewer(palette = "Dark2")
   #scale_color_manual(values = c("#604e3c", "#8c9fb7", "#796880", "#274d52")) +
   scale_color_manual(values = c("#274d52", "#c7a2a6", "#818b70", "#604e3c")) +
-  geom_smooth(method = "loess", se = F, size = 1.5, color = "gray15") +
-  #labs(color="Location",
-  #     title = "<b> Trout weight increases with total length</b><br>
-  #             <span style = 'font-size:10pt'>Siscowet Lake Trout captured at <span style='color:#F8766D'>Blind Sucker</span>, <span style='color:#00BA38'>Deer Park </span>, <span style='color:#00BA38'>Grand Marais </span>, and <span style='color:#619CFF'>Little Lake Harbor</span> have weights that increase with total length. </span>") #+
-  #labs(color = "Location",
-  #     title = "<b> Fish weight increases with total length</b><br>
-  #     <span style = 'font-size:10pt'>Siscowet Lake Trout captured at <span style='color:#274d52'>Blind Sucker</span>, <span style = 'color:#c7a2a6'>Deer Park  </span>, <span style = 'color:#818b70'>Grand Marais </span>, and <span style = 'color:#604e3c'>Little Lake Harbor</span> have weights that increase with total length. </span>")
-#
+  geom_smooth(method = "loess", se = F, size = 1, color = "gray15") 
+
+
+# just want to highlight one location - Deer Park
+
+# subset fish from Deer Park
+dp = fish_sub %>%
+  dplyr::filter(locID == "Deer Park")
+
+# subset fish from all other locations
+other = fish_sub %>%
+  dplyr::filter(locID != "Deer Park")
+
+highlight = ggplot() +
+  geom_jitter(data = other, aes(x = len, y = wgt), color = "gray60", alpha = 0.5, shape = 16, size = 2) +
+  geom_jitter(data = dp, aes(x = len, y = wgt), color = "indianred3", alpha = 0.3, shape = 16, size = 2) +
+  theme(
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") +
+  geom_smooth(method = "loess")
+highlight
+
+
+len_wgt + geom_point(shape = 16) +
+  #facet_wrap(~locID) +
+  theme(
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") +
+  scale_color_manual(values = c("gray50", "gray50", "gray50", "#c7a2a6")) +
+  annotate(geom = "text", x = 100, y = 4000, 
+           label = "Deer Park", 
+           color = "#3c6fde")
+
+
+
+# final plot
+final = ggplot() +
+  geom_jitter(data = other, aes(x = len, y = wgt), color = "#878787", alpha = 0.5, shape = 16, size = 2) +
+  geom_jitter(data = dp, aes(x = len, y = wgt), color = "#3c6fde", alpha = 0.3, shape = 16, size = 2) +
+  theme(
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none",
+    plot.subtitle = element_text(color = "gray25", face = "italic")
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") +
+  labs(color="Location",
+       title = "Trout weight increases with total length",
+       subtitle = "Siscowet Lake Trout captured at Deer Park share similar physiological traits\nwith those caught at other Michigan locations on Lake Superior") +
+  annotate(geom = "text", x = 350, y = 2000, 
+           label = "Deer Park", 
+           color = "#3c6fde") +
+  annotate(geom = "text", x = 700, y = 1300,
+           label = "Blind Sucker",
+           color = "#878787") +
+  annotate(geom = "text", x = 700, y = 1100,
+           label = "Grand Marais",
+           color = "#878787")+
+  annotate(geom = "text", x = 725, y = 900,
+           label = "Little Lake Harbour",
+           color = "#878787")
+final
+ggsave(plot = final, "figures//weight-vs-length.pdf", height = 5, width = 7, units = "in")
