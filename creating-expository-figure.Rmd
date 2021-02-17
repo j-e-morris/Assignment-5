@@ -1,0 +1,127 @@
+---
+title: "Assignment 5"
+author: "Jenna Morris"
+date: "12 February 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.align = "center", out.width = '70%')
+```
+
+
+## Exploring the the Siscowet Lake Trout dataset from [{FSAdata}](https://github.com/droglenc/FSAdata)
+
+
+### Load libraries
+
+```{r}
+library(here)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+### Set directories & load data
+```{r}
+data_dir = here::here("data")
+fish = read_csv(file.path(data_dir, "siscowet.csv"))
+```
+
+### Look at the data
+```{r}
+print(fish)
+```
+
+
+### Let's explore the relationship between length `len` and weight `wgt`
+
+Looking at histograms of each variable:
+```{r}
+hist(fish$len)
+hist(fish$wgt)
+```
+
+Looks like there's an outlier at the upper range for `wgt`. 
+
+Let's take a look at an exploratory scatterplot:
+```{r}
+fish %>%
+  ggplot(aes(x = len, y = wgt)) +  
+  geom_point()
+```
+
+Looks like there's a non-linear positive relationship between `len` and `wgt`.
+We can also see the `wgt` outlier.
+
+Let's remove the outlier and any NA values:
+```{r}
+fish_sub = fish %>%
+  dplyr::filter(wgt < 5000)
+```
+
+Let's compare the relationship across sex:
+```{r}
+fish_sub %>%
+  ggplot(aes(x = len, y = wgt, color = sex)) +  # sex as color
+  geom_point() 
+```
+The relationship appears to be similar for both male and female trout.
+
+Let's compare the relationship across location:
+```{r}
+fish_sub %>%
+  ggplot(aes(x = len, y = wgt, color = locID)) +  # location as color
+  geom_point()
+
+# location as facet
+fish_sub %>%
+  ggplot(aes(x = len, y = wgt, color = locID)) +
+  geom_point() +
+  facet_wrap(~locID)
+```
+The relationship also appears to be similar across all four locations.
+
+
+### Let's create an expository figure 
+
+I want to show the relationship between length `len` and weight `wgt` and highlight a specific location of interest.
+
+Let's clean up the exploratory plot:
+```{r}
+# creating a base plot with our variables defined
+len_wgt = ggplot(fish_sub, aes(x = len, y = wgt, col = locID))
+
+
+len_wgt + 
+  # using a jittered scatterplot to show points clearly
+  geom_jitter(shape = 16, alpha = 0.5, size = 2) +
+  theme(
+    # creating a clean background with light outline and no legend
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none"
+  ) +
+  # adjusting scales so both start at 0
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  # adding axis labels
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") +
+  #changing the colors to something more aesthetically pleasing and colorblind friendly
+  scale_color_manual(values = c("#274d52", "#c7a2a6", "#818b70", "#604e3c"))
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
