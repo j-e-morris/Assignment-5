@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ### Load libraries
 
-```{r}
+```{r load_libraries, message=FALSE}
 library(here)
 library(tidyverse)
 library(dplyr)
@@ -25,53 +25,53 @@ library(ggplot2)
 ```
 
 ### Set directories & load data
-```{r}
+```{r load_data, message=FALSE}
 data_dir = here::here("data")
 fish = read_csv(file.path(data_dir, "siscowet.csv"))
 ```
 
 ### Look at the data
-```{r}
+```{r print_data, message = FALSE}
 print(fish)
 ```
 
 
 ### Let's explore the relationship between length `len` and weight `wgt`
 
-Looking at histograms of each variable:
-```{r}
+**Looking at histograms of each variable:**
+```{r histograms, message = FALSE}
 hist(fish$len)
 hist(fish$wgt)
 ```
 
-Looks like there's an outlier at the upper range for `wgt`. 
+Looks like there's an outlier at the upper range for `wgt`.
 
-Let's take a look at an exploratory scatterplot:
-```{r}
+### Let's take a look at an exploratory scatterplot:
+```{r scatterplot, message = FALSE}
 fish %>%
   ggplot(aes(x = len, y = wgt)) +  
   geom_point()
 ```
 
-Looks like there's a non-linear positive relationship between `len` and `wgt`.
-We can also see the `wgt` outlier.
+Looks like there's a non-linear positive relationship between `len` and `wgt`. We can also see the `wgt` outlier.
 
-Let's remove the outlier and any NA values:
-```{r}
+**Let's remove the outlier and any NA values:**
+```{r remove_outlier, message = FALSE}
 fish_sub = fish %>%
   dplyr::filter(wgt < 5000)
 ```
 
-Let's compare the relationship across sex:
-```{r}
+**Let's compare the relationship across sex:**
+```{r sex, message = FALSE}
 fish_sub %>%
   ggplot(aes(x = len, y = wgt, color = sex)) +  # sex as color
   geom_point() 
 ```
 The relationship appears to be similar for both male and female trout.
 
-Let's compare the relationship across location:
-```{r}
+
+**Let's compare the relationship across location:**
+```{r location, message = FALSE}
 fish_sub %>%
   ggplot(aes(x = len, y = wgt, color = locID)) +  # location as color
   geom_point()
@@ -89,8 +89,8 @@ The relationship also appears to be similar across all four locations.
 
 I want to show the relationship between length `len` and weight `wgt` and highlight a specific location of interest.
 
-Let's clean up the exploratory plot:
-```{r}
+**Let's clean up the exploratory plot:**
+```{r clean_plot, message = FALSE}
 # creating a base plot with our variables defined
 len_wgt = ggplot(fish_sub, aes(x = len, y = wgt, col = locID))
 
@@ -98,6 +98,7 @@ len_wgt = ggplot(fish_sub, aes(x = len, y = wgt, col = locID))
 len_wgt + 
   # using a jittered scatterplot to show points clearly
   geom_jitter(shape = 16, alpha = 0.5, size = 2) +
+  facet_wrap(~locID) +
   theme(
     # creating a clean background with light outline and no legend
     panel.background = element_blank(),
@@ -116,12 +117,96 @@ len_wgt +
   scale_color_manual(values = c("#274d52", "#c7a2a6", "#818b70", "#604e3c"))
 ```
 
-## Including Plots
+**Let's get rid of the facet, and use color instead to highlight the relationship at the Deer Park location:**
+```{r location_specific, message = FALSE}
+#subset fish from Deer Park
+dp = fish_sub %>%
+  dplyr::filter(locID == "Deer Park")
 
-You can also embed plots, for example:
+# subset fish from all other locations
+other = fish_sub %>%
+  dplyr::filter(locID != "Deer Park")
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+ggplot() +
+  geom_jitter(data = other, aes(x = len, y = wgt), color = "#878787", alpha = 0.5, shape = 16, size = 2) +
+  geom_jitter(data = dp, aes(x = len, y = wgt), color = "#3c6fde", alpha = 0.3, shape = 16, size = 2) +
+  theme(
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+**Let's add a title and location key:**
+```{r add_title}
+ggplot() +
+  geom_jitter(data = other, aes(x = len, y = wgt), color = "#878787", alpha = 0.5, shape = 16, size = 2) +
+  geom_jitter(data = dp, aes(x = len, y = wgt), color = "#3c6fde", alpha = 0.3, shape = 16, size = 2) +
+  theme(
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") +
+  labs(color="Location",
+     title = "Trout weight increases with total length") +
+  annotate(geom = "text", x = 350, y = 2000, 
+                label = "Deer Park", 
+                color = "#3c6fde") +
+  annotate(geom = "text", x = 700, y = 1300,
+                label = "Blind Sucker",
+                color = "#878787") +
+  annotate(geom = "text", x = 700, y = 1100,
+                label = "Grand Marais",
+                color = "#878787")+
+  annotate(geom = "text", x = 725, y = 900,
+                label = "Little Lake Harbour",
+                color = "#878787")
+```
+
+
+### Final plot
+```{r final_plot, echo = FALSE}
+final = ggplot() +
+  geom_jitter(data = other, aes(x = len, y = wgt), color = "#878787", alpha = 0.5, shape = 16, size = 2) +
+  geom_jitter(data = dp, aes(x = len, y = wgt), color = "#3c6fde", alpha = 0.3, shape = 16, size = 2) +
+  theme(
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "gray80", fill = NA),
+    legend.position = "none",
+    plot.subtitle = element_text(color = "gray25", face = "italic")
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
+                     limits = c(0, NA)) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)),
+                     limits = c(0, 800)) +
+  xlab("Total length (mm)") +
+  ylab("Weight (g)") +
+labs(color="Location",
+     title = "Trout weight increases with total length",
+     subtitle = "Siscowet Lake Trout captured at Deer Park share similar physiological traits\nwith those caught at other Michigan locations on Lake Superior") +
+  annotate(geom = "text", x = 350, y = 2000, 
+                label = "Deer Park", 
+                color = "#3c6fde") +
+  annotate(geom = "text", x = 700, y = 1300,
+                label = "Blind Sucker",
+                color = "#878787") +
+  annotate(geom = "text", x = 700, y = 1100,
+                label = "Grand Marais",
+                color = "#878787")+
+  annotate(geom = "text", x = 725, y = 900,
+                label = "Little Lake Harbour",
+                color = "#878787")
+final
+```
